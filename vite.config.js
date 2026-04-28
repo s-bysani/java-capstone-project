@@ -4,6 +4,7 @@ import vue from '@vitejs/plugin-vue'
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 
 export default defineConfig({
+  base: '/java-capstone-project/',
   plugins: [
     vue({
       template: { transformAssetUrls }

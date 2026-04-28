@@ -4,13 +4,13 @@ import { getFirestore } from "firebase/firestore";
 
 // The user needs to populate this with their Firebase configuration.
 const firebaseConfig = {
-  apiKey: "AIzaSyC3GyI7au1RUqZMJLAFf0596H11P_nWRWo",
-  authDomain: "sante-intelligente.firebaseapp.com",
-  projectId: "sante-intelligente",
-  storageBucket: "sante-intelligente.firebasestorage.app",
-  messagingSenderId: "553046384614",
-  appId: "1:553046384614:web:9934d4303c46c6f1b3c027",
-  measurementId: "G-3BMG07SGHL"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase only if config is provided
