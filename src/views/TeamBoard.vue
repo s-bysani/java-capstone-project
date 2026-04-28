@@ -72,6 +72,7 @@
             <v-tab value="dependencies" class="text-caption font-weight-bold text-uppercase">Dependencies</v-tab>
             <v-tab value="data" class="text-caption font-weight-bold text-uppercase">Data & Integrations</v-tab>
             <v-tab value="requirements" class="text-caption font-weight-bold text-uppercase">Requirements</v-tab>
+            <v-tab value="roster" class="text-caption font-weight-bold text-uppercase">Team Roster</v-tab>
           </v-tabs>
 
           <v-card-text class="pa-0">
@@ -196,6 +197,61 @@
                     No requirements match the selected filter.
                   </div>
                 </div>
+              </v-window-item>
+
+              <!-- Team Roster Tab -->
+              <v-window-item value="roster" class="pa-4">
+                <v-row>
+                  <!-- Mentors Section -->
+                  <v-col cols="12" md="4">
+                    <div class="d-flex align-center mb-3">
+                      <v-icon color="secondary" size="small" class="mr-2">mdi-shield-star</v-icon>
+                      <h3 class="text-subtitle-2 font-weight-bold text-secondary text-uppercase">Mentors</h3>
+                    </div>
+                    <v-card v-for="mentor in rosterMentors" :key="mentor.id" class="mb-2 pa-3 glass-card-dark" elevation="0" style="border: 1px solid rgba(156, 39, 176, 0.3);">
+                      <div class="d-flex align-center">
+                        <v-avatar size="32" color="secondary" class="mr-3">
+                          <v-icon size="16" color="white">mdi-shield-star</v-icon>
+                        </v-avatar>
+                        <div>
+                          <div class="text-body-2 font-weight-bold text-white">{{ mentor.name }}</div>
+                          <div v-if="mentor.location" class="text-grey-lighten-1 d-flex align-center mt-1" style="font-size: 0.65rem; line-height: 1;">
+                            <v-icon size="8" class="mr-1">mdi-map-marker</v-icon> {{ mentor.location }}
+                          </div>
+                        </div>
+                      </div>
+                    </v-card>
+                    <div v-if="!rosterMentors.length" class="text-caption text-grey-lighten-1 mb-4 pa-3 border-dashed rounded-lg" style="border-color: rgba(255,255,255,0.1) !important;">
+                      No mentors assigned.
+                    </div>
+                  </v-col>
+
+                  <!-- Engineers Section -->
+                  <v-col cols="12" md="8">
+                    <div class="d-flex align-center mb-3">
+                      <v-icon :color="teamMetaInfo.color" size="small" class="mr-2">mdi-account-group</v-icon>
+                      <h3 class="text-subtitle-2 font-weight-bold text-uppercase" :style="`color: ${teamMetaInfo.color};`">Engineers</h3>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                      <v-card v-for="member in rosterEngineers" :key="member.id" class="pa-2 flex-grow-1" min-width="200" rounded="lg" elevation="0" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05);">
+                        <div class="d-flex align-center">
+                          <v-avatar size="32" :color="teamMetaInfo.color" class="mr-3">
+                            <span class="text-caption font-weight-bold text-white">{{ member.name.charAt(0) }}</span>
+                          </v-avatar>
+                          <div>
+                            <div class="text-body-2 font-weight-bold text-white lh-sm">{{ member.name }}</div>
+                            <div v-if="member.location" class="text-grey-lighten-1 d-flex align-center mt-1" style="font-size: 0.65rem; line-height: 1;">
+                              <v-icon size="8" class="mr-1">mdi-map-marker</v-icon> {{ member.location }}
+                            </div>
+                          </div>
+                        </div>
+                      </v-card>
+                    </div>
+                    <div v-if="!rosterEngineers.length" class="text-caption text-grey-lighten-1 mb-4 pa-3 border-dashed rounded-lg" style="border-color: rgba(255,255,255,0.1) !important;">
+                      No engineers assigned.
+                    </div>
+                  </v-col>
+                </v-row>
               </v-window-item>
             </v-window>
           </v-card-text>
@@ -656,6 +712,15 @@ const newTask = ref({
 // Filter team members for the dropdown
 const teamMembers = computed(() => {
   return trackerStore.engineers.filter(e => e.teamId === teamId.value)
+})
+
+// Roster specific filters
+const rosterEngineers = computed(() => {
+  return trackerStore.engineers.filter(e => e.teamId === teamId.value && (e.role || 'member') !== 'mentor')
+})
+
+const rosterMentors = computed(() => {
+  return trackerStore.engineers.filter(e => e.teamId === teamId.value && (e.role || 'member') === 'mentor')
 })
 
 onMounted(() => {
