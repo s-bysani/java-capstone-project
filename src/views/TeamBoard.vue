@@ -73,6 +73,7 @@
             <v-tab value="data" class="text-caption font-weight-bold text-uppercase">Data & Integrations</v-tab>
             <v-tab value="requirements" class="text-caption font-weight-bold text-uppercase">Requirements</v-tab>
             <v-tab value="roster" class="text-caption font-weight-bold text-uppercase">Team Roster</v-tab>
+            <v-tab value="design" class="text-caption font-weight-bold text-uppercase">Design & Flow</v-tab>
           </v-tabs>
 
           <v-card-text class="pa-0">
@@ -250,6 +251,65 @@
                     <div v-if="!rosterEngineers.length" class="text-caption text-grey-lighten-1 mb-4 pa-3 border-dashed rounded-lg" style="border-color: rgba(255,255,255,0.1) !important;">
                       No engineers assigned.
                     </div>
+                  </v-col>
+                </v-row>
+              </v-window-item>
+
+              <!-- Design & Flow Tab -->
+              <v-window-item value="design" class="pa-4">
+                <v-row>
+                  <!-- Architecture Data Flow -->
+                  <v-col cols="12" md="5">
+                    <div class="d-flex align-center mb-4">
+                      <v-icon :color="teamMetaInfo.color" size="small" class="mr-2">mdi-transit-connection-variant</v-icon>
+                      <h3 class="text-subtitle-2 font-weight-bold text-uppercase" :style="`color: ${teamMetaInfo.color};`">Micro-Architecture Flow</h3>
+                    </div>
+                    
+                    <v-card class="pa-5 glass-card-dark text-center h-100 d-flex flex-column justify-center" rounded="lg" style="border: 1px dashed rgba(255,255,255,0.1);">
+                      <!-- Inputs -->
+                      <div class="d-flex justify-center flex-wrap gap-2 mb-3">
+                        <v-chip v-for="need in teamMetaInfo.needs" :key="need.from" size="small" color="error" variant="outlined" class="font-weight-bold">
+                          <v-icon start size="x-small">mdi-login</v-icon> {{ need.what }}
+                        </v-chip>
+                        <v-chip v-if="!teamMetaInfo.needs.length" size="small" color="grey" variant="outlined">External Triggers</v-chip>
+                      </div>
+                      
+                      <v-icon color="grey-darken-1" class="mb-2">mdi-arrow-down-thick</v-icon>
+                      
+                      <!-- Core Module -->
+                      <v-card class="pa-4 glass-card mx-auto mb-2" :style="`border: 2px solid ${teamMetaInfo.color}; max-width: 250px;`">
+                        <v-icon :color="teamMetaInfo.color" size="large" class="mb-2">mdi-cogs</v-icon>
+                        <div class="text-subtitle-2 font-weight-bold text-white">{{ teamName }}</div>
+                        <div class="text-caption text-grey mt-1">Kafka / Microservices</div>
+                      </v-card>
+                      
+                      <v-icon color="grey-darken-1" class="mb-3">mdi-arrow-down-thick</v-icon>
+                      
+                      <!-- Outputs -->
+                      <div class="d-flex justify-center flex-wrap gap-2">
+                        <v-chip v-for="provide in teamMetaInfo.provides" :key="provide.to" size="small" color="success" variant="outlined" class="font-weight-bold">
+                          <v-icon start size="x-small">mdi-logout</v-icon> {{ provide.what }}
+                        </v-chip>
+                        <v-chip v-if="!teamMetaInfo.provides.length" size="small" color="grey" variant="outlined">Final Output</v-chip>
+                      </div>
+                    </v-card>
+                  </v-col>
+
+                  <!-- UI Mockup -->
+                  <v-col cols="12" md="7">
+                    <div class="d-flex align-center mb-4 mt-4 mt-md-0">
+                      <v-icon color="primary" size="small" class="mr-2">mdi-monitor-dashboard</v-icon>
+                      <h3 class="text-subtitle-2 font-weight-bold text-primary text-uppercase">Module Mockup</h3>
+                    </div>
+                    <v-card class="glass-card rounded-lg overflow-hidden" elevation="12" style="border: 1px solid rgba(255,255,255,0.05);">
+                      <v-img :src="`/java-capstone-project/images/mockups/t${teamId}.png`" cover aspect-ratio="1" class="bg-grey-darken-4">
+                        <template v-slot:placeholder>
+                          <div class="d-flex align-center justify-center fill-height">
+                            <v-progress-circular color="primary" indeterminate></v-progress-circular>
+                          </div>
+                        </template>
+                      </v-img>
+                    </v-card>
                   </v-col>
                 </v-row>
               </v-window-item>

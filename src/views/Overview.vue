@@ -172,6 +172,71 @@
       </v-col>
     </v-row>
 
+    <!-- Platform Preview -->
+    <v-row class="mb-6">
+      <v-col cols="12" class="anim-item" style="animation-delay: 0.4s;">
+        <h2 class="text-h4 font-weight-bold mb-4 d-flex align-center">
+          <v-icon color="secondary" class="mr-2">mdi-monitor-dashboard</v-icon>
+          Platform Preview
+        </h2>
+        <v-card class="pa-2 glass-card rounded-xl overflow-hidden" elevation="24">
+          <v-img src="/java-capstone-project/images/mockups/overview.png" cover class="rounded-lg" aspect-ratio="16/9"></v-img>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Talent Supply Chain Flow -->
+    <v-row class="mb-6">
+      <v-col cols="12" class="anim-item" style="animation-delay: 0.5s;">
+        <h2 class="text-h4 font-weight-bold mb-4 d-flex align-center">
+          <v-icon color="primary" class="mr-2">mdi-transit-connection-variant</v-icon>
+          Talent Supply Chain Flow
+        </h2>
+        <v-card class="pa-6 glass-card-dark overflow-x-auto" rounded="lg">
+          <div class="d-flex align-center justify-space-between flex-nowrap" style="min-width: 800px; gap: 16px;">
+            <!-- Demand -->
+            <v-card class="pa-4 flex-grow-1 text-center glass-card" style="border: 1px solid #E65D24;">
+              <v-icon color="#E65D24" size="large" class="mb-2">mdi-bullhorn</v-icon>
+              <div class="text-subtitle-2 font-weight-bold">Demand Creation</div>
+              <div class="text-caption text-grey">Team 1</div>
+            </v-card>
+            <v-icon color="grey-darken-1" size="large">mdi-arrow-right-thick</v-icon>
+            
+            <!-- Careers -->
+            <v-card class="pa-4 flex-grow-1 text-center glass-card" style="border: 1px solid #A9B400;">
+              <v-icon color="#A9B400" size="large" class="mb-2">mdi-web</v-icon>
+              <div class="text-subtitle-2 font-weight-bold">Careers Portal</div>
+              <div class="text-caption text-grey">Team 3</div>
+            </v-card>
+            <v-icon color="grey-darken-1" size="large">mdi-arrow-right-thick</v-icon>
+            
+            <!-- Recruitment -->
+            <v-card class="pa-4 flex-grow-1 text-center glass-card" style="border: 1px solid #006DB6;">
+              <v-icon color="#006DB6" size="large" class="mb-2">mdi-account-search</v-icon>
+              <div class="text-subtitle-2 font-weight-bold">Recruitment ATS</div>
+              <div class="text-caption text-grey">Team 2</div>
+            </v-card>
+            <v-icon color="grey-darken-1" size="large">mdi-arrow-right-thick</v-icon>
+            
+            <!-- Matching -->
+            <v-card class="pa-4 flex-grow-1 text-center glass-card" style="border: 1px solid #F59E0B;">
+              <v-icon color="#F59E0B" size="large" class="mb-2">mdi-brain</v-icon>
+              <div class="text-subtitle-2 font-weight-bold">Semantic Matching</div>
+              <div class="text-caption text-grey">Team 5</div>
+            </v-card>
+            <v-icon color="grey-darken-1" size="large">mdi-arrow-right-thick</v-icon>
+            
+            <!-- RMG -->
+            <v-card class="pa-4 flex-grow-1 text-center glass-card" style="border: 1px solid #EF4444;">
+              <v-icon color="#EF4444" size="large" class="mb-2">mdi-account-hard-hat</v-icon>
+              <div class="text-subtitle-2 font-weight-bold">RMG Allocation</div>
+              <div class="text-caption text-grey">Team 6</div>
+            </v-card>
+          </div>
+        </v-card>
+      </v-col>
+    </v-row>
+
     <!-- Engineering Details Section -->
     <v-row class="mt-2 mb-4">
       <v-col cols="12" class="anim-item" style="animation-delay: 0.3s;">
