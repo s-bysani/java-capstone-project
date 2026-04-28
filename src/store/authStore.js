@@ -30,17 +30,17 @@ export const useAuthStore = defineStore('auth', () => {
           await updateDoc(userRef, { hasLoggedIn: true })
         }
       } else {
-        // Create new user, default to admin for ease of testing during capstone
+        // Create new user, default to guest
         const newUserData = {
           email: userEmail,
           displayName,
-          role: 'admin', // Set to admin by default to prevent testing lockouts
+          role: 'guest',
           teamIds: [],
           hasLoggedIn: true, // They just logged in
           createdAt: new Date().toISOString()
         }
         await setDoc(userRef, newUserData)
-        userRole.value = 'admin'
+        userRole.value = 'guest'
         userTeamIds.value = []
       }
     } catch (err) {
