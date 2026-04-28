@@ -76,7 +76,18 @@
               <div class="status-dot mr-2" :style="`background-color: ${getTeamColor(teamId)}; box-shadow: 0 0 6px ${getTeamColor(teamId)}; width: 6px; height: 6px;`"></div>
               <span class="text-body-2 font-weight-bold text-white letter-spacing-1">Team {{ teamId }}</span>
             </div>
-            <v-chip size="x-small" variant="tonal" :color="getTeamColor(teamId)" class="font-weight-bold px-2">{{ getEngineersByTeam(teamId).length }}</v-chip>
+            <div class="d-flex align-center gap-1">
+              <v-chip size="x-small" variant="tonal" :color="getTeamColor(teamId)" class="font-weight-bold px-2">{{ getEngineersByTeam(teamId).length + getEngineersByTeamAndRole(teamId, 'mentor').length }}</v-chip>
+              <v-btn
+                icon="mdi-restore"
+                variant="text"
+                size="x-small"
+                color="grey-lighten-1"
+                class="ml-1 opacity-60 hover-opacity-100"
+                style="width: 22px; height: 22px;"
+                @click.stop="resetTeam(teamId)"
+              ></v-btn>
+            </div>
           </v-card-title>
           <v-card-text class="flex-grow-1 pa-2 list-container" style="overflow: visible;">
             <!-- Mentors Zone -->
@@ -204,6 +215,11 @@ const deleteMember = (id) => {
 
 const revertMember = (id) => {
   trackerStore.updateEngineerTeam(id, null, 'member')
+}
+
+const resetTeam = (teamId) => {
+  const teamMembers = trackerStore.engineers.filter(e => e.teamId === teamId)
+  teamMembers.forEach(e => trackerStore.updateEngineerTeam(e.id, null, 'member'))
 }
 
 const handleFileUpload = (file) => {
