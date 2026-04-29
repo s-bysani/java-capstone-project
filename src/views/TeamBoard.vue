@@ -29,12 +29,12 @@
                   <v-chip size="small" variant="flat" class="font-weight-medium text-white" style="background: rgba(0,0,0,0.35);">
                     <v-icon start size="x-small">mdi-map-marker</v-icon> {{ teamMetaInfo.city }}
                   </v-chip>
-                  <v-chip size="small" variant="flat" class="font-weight-medium text-white" style="background: rgba(0,0,0,0.35);">
+            <!--  <v-chip size="small" variant="flat" class="font-weight-medium text-white" style="background: rgba(0,0,0,0.35);">
                     <v-icon start size="x-small">mdi-account-group</v-icon> {{ teamMetaInfo.size }} Members
                   </v-chip>
                   <v-chip size="small" variant="flat" class="font-weight-medium text-white" style="background: rgba(0,0,0,0.35);">
                     <v-icon start size="x-small">mdi-account-hard-hat</v-icon> {{ teamMetaInfo.roles }}
-                  </v-chip>
+                  </v-chip> -->
                 </div>
               </v-col>
               <!-- Right: Stats -->
