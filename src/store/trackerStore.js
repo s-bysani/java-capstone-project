@@ -6,6 +6,7 @@ import { db } from '../firebase'
 export const useTrackerStore = defineStore('tracker', () => {
   const engineers = ref([])
   const tasks = ref([])
+  const iterations = ref([])
   const isDbReady = !!db
 
   // Fetch engineers and their team mappings
@@ -35,7 +36,7 @@ export const useTrackerStore = defineStore('tracker', () => {
       const userSnap = await getDoc(userRef)
       if (userSnap.exists()) {
         await updateDoc(userRef, { 
-          teamIds: teamId ? [teamId] : [], // Override team assignment for simplicity
+          teamIds: teamId ? [teamId] : [],
           role: role 
         })
       }
@@ -51,13 +52,8 @@ export const useTrackerStore = defineStore('tracker', () => {
       return;
     }
     const promises = engineersData.map(async (eng) => {
-      // Use email as ID if available, otherwise fallback to random
       const id = eng.email ? eng.email.toLowerCase() : Math.random().toString(36).substr(2, 9)
-      
-      // 1. Create engineer document for board display
       await setDoc(doc(db, 'engineers', id), { ...eng, teamId: null, role: eng.role || 'member' })
-      
-      // 2. Pre-provision Firebase user document
       if (eng.email) {
         const emailLower = eng.email.toLowerCase()
         await setDoc(doc(db, 'users', emailLower), {
@@ -67,13 +63,12 @@ export const useTrackerStore = defineStore('tracker', () => {
           teamIds: [],
           hasLoggedIn: false,
           createdAt: new Date().toISOString()
-        }, { merge: true }) // use merge to preserve existing users if any
+        }, { merge: true })
       }
     })
     await Promise.all(promises)
   }
 
-  // Delete an engineer
   const deleteEngineer = async (engineerId) => {
     if (!isDbReady) {
       engineers.value = engineers.value.filter(e => e.id !== engineerId)
@@ -81,14 +76,14 @@ export const useTrackerStore = defineStore('tracker', () => {
     }
     const engRef = doc(db, 'engineers', engineerId)
     await deleteDoc(engRef)
-    
     if (engineerId.includes('@')) {
       const userRef = doc(db, 'users', engineerId)
       await deleteDoc(userRef)
     }
   }
 
-  // Fetch all tasks
+  // ─── Tasks ──────────────────────────────────────────────────────────────────
+
   const subscribeTasks = () => {
     if (!isDbReady) return;
     const tasksCol = collection(db, 'tasks')
@@ -97,7 +92,6 @@ export const useTrackerStore = defineStore('tracker', () => {
     })
   }
 
-  // Add a task
   const addTask = async (taskData) => {
     if (!isDbReady) {
       tasks.value.push({ id: Math.random().toString(36).substr(2, 9), ...taskData })
@@ -107,7 +101,6 @@ export const useTrackerStore = defineStore('tracker', () => {
     await setDoc(doc(db, 'tasks', id), taskData)
   }
 
-  // Update task status (column)
   const updateTaskStatus = async (taskId, newStatus) => {
     if (!isDbReady) {
       const task = tasks.value.find(t => t.id === taskId)
@@ -118,20 +111,16 @@ export const useTrackerStore = defineStore('tracker', () => {
     await updateDoc(taskRef, { status: newStatus })
   }
 
-  // Update multiple details of a task
   const updateTaskDetails = async (taskId, updates) => {
     if (!isDbReady) {
       const task = tasks.value.find(t => t.id === taskId)
-      if (task) {
-        Object.assign(task, updates)
-      }
+      if (task) Object.assign(task, updates)
       return;
     }
     const taskRef = doc(db, 'tasks', taskId)
     await updateDoc(taskRef, updates)
   }
 
-  // Add a comment to a task
   const addTaskComment = async (taskId, commentText, authorName) => {
     const newComment = {
       id: Math.random().toString(36).substr(2, 9),
@@ -139,7 +128,6 @@ export const useTrackerStore = defineStore('tracker', () => {
       author: authorName || 'Unknown',
       timestamp: new Date().toISOString()
     }
-    
     if (!isDbReady) {
       const task = tasks.value.find(t => t.id === taskId)
       if (task) {
@@ -148,14 +136,10 @@ export const useTrackerStore = defineStore('tracker', () => {
       }
       return;
     }
-    
     const taskRef = doc(db, 'tasks', taskId)
-    await updateDoc(taskRef, {
-      comments: arrayUnion(newComment)
-    })
+    await updateDoc(taskRef, { comments: arrayUnion(newComment) })
   }
 
-  // Delete a task
   const deleteTask = async (taskId) => {
     if (!isDbReady) {
       tasks.value = tasks.value.filter(t => t.id !== taskId)
@@ -165,7 +149,6 @@ export const useTrackerStore = defineStore('tracker', () => {
     await deleteDoc(taskRef)
   }
 
-  // Update a comment
   const updateTaskComment = async (taskId, commentId, newText) => {
     if (!isDbReady) {
       const task = tasks.value.find(t => t.id === taskId)
@@ -183,7 +166,6 @@ export const useTrackerStore = defineStore('tracker', () => {
     }
   }
 
-  // Delete a comment
   const deleteTaskComment = async (taskId, commentId) => {
     if (!isDbReady) {
       const task = tasks.value.find(t => t.id === taskId)
@@ -200,9 +182,53 @@ export const useTrackerStore = defineStore('tracker', () => {
     }
   }
 
+  // ─── Iterations (Sprints) ────────────────────────────────────────────────────
+
+  const subscribeIterations = () => {
+    if (!isDbReady) return;
+    const iterCol = collection(db, 'iterations')
+    onSnapshot(iterCol, (snapshot) => {
+      iterations.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    })
+  }
+
+  const addIteration = async (iterData) => {
+    const id = Math.random().toString(36).substr(2, 9)
+    const payload = { ...iterData, createdAt: new Date().toISOString() }
+    if (!isDbReady) {
+      iterations.value.push({ id, ...payload })
+      return id;
+    }
+    await setDoc(doc(db, 'iterations', id), payload)
+    return id;
+  }
+
+  const updateIteration = async (iterationId, updates) => {
+    if (!isDbReady) {
+      const iter = iterations.value.find(i => i.id === iterationId)
+      if (iter) Object.assign(iter, updates)
+      return;
+    }
+    const iterRef = doc(db, 'iterations', iterationId)
+    await updateDoc(iterRef, updates)
+  }
+
+  const deleteIteration = async (iterationId) => {
+    if (!isDbReady) {
+      iterations.value = iterations.value.filter(i => i.id !== iterationId)
+      tasks.value.forEach(t => { if (t.iterationId === iterationId) t.iterationId = null })
+      return;
+    }
+    // Detach tasks first
+    const tasksToDetach = tasks.value.filter(t => t.iterationId === iterationId)
+    await Promise.all(tasksToDetach.map(t => updateDoc(doc(db, 'tasks', t.id), { iterationId: null })))
+    await deleteDoc(doc(db, 'iterations', iterationId))
+  }
+
   return {
     engineers,
     tasks,
+    iterations,
     subscribeEngineers,
     updateEngineerTeam,
     addEngineersBulk,
@@ -214,6 +240,10 @@ export const useTrackerStore = defineStore('tracker', () => {
     deleteTask,
     addTaskComment,
     updateTaskComment,
-    deleteTaskComment
+    deleteTaskComment,
+    subscribeIterations,
+    addIteration,
+    updateIteration,
+    deleteIteration,
   }
 })

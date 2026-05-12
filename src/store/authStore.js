@@ -17,32 +17,31 @@ export const useAuthStore = defineStore('auth', () => {
       if (!db || !email) return // Guard if db isn't initialized or no email
       const userEmail = email.toLowerCase()
       const userRef = doc(db, 'users', userEmail)
-      const userSnap = await getDoc(userRef)
       
-      if (userSnap.exists()) {
-        const data = userSnap.data()
-        userRole.value = data.role
-        // Normalize legacy teamId to array
-        userTeamIds.value = data.teamIds || (data.teamId ? [data.teamId] : [])
-        
-        // Update hasLoggedIn flag if not already set or false
-        if (!data.hasLoggedIn) {
-          await updateDoc(userRef, { hasLoggedIn: true })
+      // Use onSnapshot for real-time role and team updates
+      onSnapshot(userRef, async (userSnap) => {
+        if (userSnap.exists()) {
+          const data = userSnap.data()
+          userRole.value = data.role
+          userTeamIds.value = data.teamIds || (data.teamId ? [data.teamId] : [])
+          
+          if (!data.hasLoggedIn) {
+            await updateDoc(userRef, { hasLoggedIn: true })
+          }
+        } else {
+          const newUserData = {
+            email: userEmail,
+            displayName,
+            role: 'guest',
+            teamIds: [],
+            hasLoggedIn: true,
+            createdAt: new Date().toISOString()
+          }
+          await setDoc(userRef, newUserData)
+          userRole.value = 'guest'
+          userTeamIds.value = []
         }
-      } else {
-        // Create new user, default to guest
-        const newUserData = {
-          email: userEmail,
-          displayName,
-          role: 'guest',
-          teamIds: [],
-          hasLoggedIn: true, // They just logged in
-          createdAt: new Date().toISOString()
-        }
-        await setDoc(userRef, newUserData)
-        userRole.value = 'guest'
-        userTeamIds.value = []
-      }
+      })
     } catch (err) {
       console.error('Error fetching user data:', err)
       error.value = 'Failed to load user permissions.'

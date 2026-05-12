@@ -466,6 +466,78 @@ export const teamDeliverables = {
   ]
 };
 
+// ─── Team Glossary ────────────────────────────────────────────────────────────
+// Forge-specific abbreviations sourced from BRD §Glossary, §3, §5, and §7.
+
+const sharedGlossary = [
+  { term: 'ADR', definition: 'Architecture Decision Record — short document capturing a significant engineering decision and its consequences.', category: 'Platform' },
+  { term: 'GDPR', definition: 'General Data Protection Regulation — governs candidate PII handling; hard deletion within 72 h of request.', category: 'Compliance' },
+  { term: 'JWT', definition: 'JSON Web Token — stateless auth token issued by Chennai Team 1, validated by all other services.', category: 'Platform' },
+  { term: 'K8s', definition: 'Kubernetes — container orchestration platform hosting all Forge microservices on the shared intern cluster.', category: 'DevOps' },
+  { term: 'Kafka', definition: 'Apache Kafka — all inter-service async communication routes through Kafka topics (owned by Chennai Team 1).', category: 'Platform' },
+  { term: 'LLM', definition: 'Large Language Model — GPT-4o or Claude 3.5, used for text generation and semantic understanding across all teams.', category: 'AI' },
+  { term: 'PES / BRD', definition: 'Product Engineering Specification — the authoritative requirements document for Forge v2.0.', category: 'Platform' },
+  { term: 'PII', definition: 'Personally Identifiable Information — must be stripped before any LLM call and never written to logs.', category: 'Compliance' },
+  { term: 'RBAC', definition: 'Role-Based Access Control — maps roles (Admin, Recruiter, RM, HM, Interviewer, Candidate) to allowed actions.', category: 'Platform' },
+  { term: 'RFC', definition: 'Request for Comments — required for any OpenAPI contract change after Week 1 Day 2; 24-hour comment window.', category: 'Platform' },
+  { term: 'RMG', definition: 'Resource Management Group — owns bench visibility and engineer allocation; primary consumer of HY Team 5/6 features.', category: 'Role' },
+  { term: 'SSO', definition: 'Single Sign-On — centralised auth via Okta or Azure AD using OIDC/SAML (Chennai Team 1).', category: 'Platform' },
+];
+
+const teamSpecificGlossary = {
+  1: [
+    { term: 'AuditLog', definition: 'Append-only table logging every state change — entity, actor, timestamp, before/after JSONB. No UPDATE or DELETE permitted.', category: 'Data Entity' },
+    { term: 'Demand', definition: 'Core entity: DRAFT → PENDING_APPROVAL → APPROVED → INTERNAL_SEARCH → OPEN_EXTERNAL → FILLED/CANCELLED.', category: 'Domain' },
+    { term: 'Internal-first gate', definition: 'REQ-DM-04: demand cannot advance to OPEN_EXTERNAL until RMG has had 5 business days to nominate an internal engineer.', category: 'Domain' },
+    { term: 'PLAT', definition: 'REQ ID prefix — Platform Foundation (PLAT-01–06): Auth, Gateway, Kafka, DDL, Notifications, Design System.', category: 'Requirements' },
+    { term: 'REQ-DM', definition: 'REQ ID prefix — Demand Intelligence (REQ-DM-01–13): creation, approval, state machine, dashboard, AI features.', category: 'Requirements' },
+  ],
+  2: [
+    { term: 'Affinda', definition: 'AI resume parsing SaaS (primary); GPT-4o Vision is the fallback (REQ-ER-02).', category: 'Integration' },
+    { term: 'DocuSign', definition: 'E-signature SaaS for offer letter signing (REQ-ER-09); PDF download is the fallback.', category: 'Integration' },
+    { term: 'ExternalCandidate', definition: 'DB entity for applicants — soft-deleted for GDPR. Unique constraint on email. Owned by Chennai Team 2.', category: 'Data Entity' },
+    { term: 'REQ-ER', definition: 'REQ ID prefix — Talent Acquisition Engine (REQ-ER-01–15): candidates, pipeline, interviews, offers, AI scoring.', category: 'Requirements' },
+    { term: 'Scorecard', definition: 'Interview evaluation form (Technical / Behavioural / Cultural Fit). Ratings stored as JSONB per competency.', category: 'Data Entity' },
+  ],
+  3: [
+    { term: 'axe-core', definition: 'Accessibility scanner — careers portal must pass with zero critical violations (REQ-JP-06).', category: 'Quality' },
+    { term: 'JobPosting', definition: 'DB entity linking a Demand to its listing on LinkedIn, Indeed, and the careers portal. Slug must be globally unique.', category: 'Data Entity' },
+    { term: 'JSON-LD', definition: 'Structured data format for SEO JobPosting schema on /careers/{slug} pages (REQ-JP-09).', category: 'Integration' },
+    { term: 'REFERRAL', definition: 'Source enum on Application records — engineers generate unique referral URLs tracked through to hire outcome.', category: 'Domain' },
+    { term: 'REQ-JP', definition: 'REQ ID prefix — Market Presence Core Portal (REQ-JP-01–11): job posting, LinkedIn/Indeed, SEO, referrals.', category: 'Requirements' },
+  ],
+  4: [
+    { term: 'AIInteraction', definition: 'Platform table logging every LLM call — model, tokens, latencyMs, inputHash (SHA-256). No raw PII stored.', category: 'Data Entity' },
+    { term: 'Guardrail Library', definition: 'Shared Spring @Component (REQ-AI-05) enforcing PII stripping, bias blocklist, and graceful fallback on API error.', category: 'AI' },
+    { term: 'RAG', definition: 'Retrieval-Augmented Generation — grounds LLM responses in retrieved documents to reduce hallucination (REQ-AI-02).', category: 'AI' },
+    { term: 'REQ-AI', definition: 'REQ ID prefix — AI features (REQ-AI-01–05): JD generation, RAG chatbot, channel recommendation, guardrail library.', category: 'Requirements' },
+    { term: 'REQ-AN', definition: 'REQ ID prefix — Analytics Dashboards (REQ-AN-01–03): RMG dashboard, Hiring Pipeline, AI Usage.', category: 'Requirements' },
+  ],
+  5: [
+    { term: 'Embedding', definition: 'Vector of engineer skills (1536-dim, OpenAI text-embedding-3-small) stored in pgvector. Refreshed on Kafka event.', category: 'AI' },
+    { term: 'InternalMatch', definition: 'Allocation of a bench engineer to a demand — ACCEPTED or REJECTED with written reason (≥ 20 chars).', category: 'Data Entity' },
+    { term: 'pgvector', definition: 'PostgreSQL extension for cosine-similarity search over skill embeddings. Schema owned by Chennai Team 1.', category: 'AI' },
+    { term: 'REQ-IT', definition: 'REQ ID prefix — Workforce Allocation Services (REQ-IT-01–13): profiles, bench APIs, nominations, semantic match.', category: 'Requirements' },
+    { term: 'utilisationPct', definition: 'Allocation % across active projects. Over-allocation (>100%) or under-utilisation (<50%) triggers a Kafka event.', category: 'Domain' },
+  ],
+  6: [
+    { term: 'AI-generated badge', definition: 'Required UI label on every AI-generated element (match results, upskilling) for transparency (REQ-UI-04/06).', category: 'AI' },
+    { term: 'Heatmap', definition: 'Skills gap matrix: required skills vs bench skills, colour-coded and sortable (REQ-UI-02).', category: 'Domain' },
+    { term: 'REQ-UI', definition: 'REQ ID prefix — Workforce Allocation UI (REQ-UI-01–06): bench dashboard, heatmap, nomination UI, self-service portal.', category: 'Requirements' },
+    { term: 'Self-service Portal', definition: 'Engineers update own skills[] and availabilityDate (REQ-UI-05). All other fields require RMG or admin.', category: 'Domain' },
+    { term: 'Upskilling Path', definition: 'AI-generated learning recommendation — 3–5 courses with title, platform, hours, and rationale (REQ-UI-06).', category: 'AI' },
+  ],
+};
+
+export const teamGlossary = Object.fromEntries(
+  [1, 2, 3, 4, 5, 6].map(id => [
+    id,
+    [...teamSpecificGlossary[id], ...sharedGlossary].sort((a, b) => a.term.localeCompare(b.term))
+  ])
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const teamRequirements = {
   1: [
     {id:'PLAT-01', text:'Auth service: JWT + OAuth2 via Spring Security. Token validation library consumed by all teams. Stubs delivered Week 1 Day 3.', priority:'Must', ai:false},

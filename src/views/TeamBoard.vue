@@ -65,18 +65,123 @@
         <!-- Detailed Tabs -->
         <v-card class="glass-card" rounded="lg" elevation="0">
           <v-tabs v-model="tab" color="primary" align-tabs="start" class="border-b-sm" style="border-color: rgba(255,255,255,0.05) !important;">
+            <v-tab value="board" class="text-caption font-weight-bold text-uppercase">
+              <v-icon start size="x-small">mdi-view-kanban</v-icon> Task Board
+            </v-tab>
+            <v-tab value="iterations" class="text-caption font-weight-bold text-uppercase">
+              <v-icon start size="x-small">mdi-lightning-bolt</v-icon> Sprints
+              <v-chip size="x-small" color="warning" variant="flat" class="ml-2 font-weight-bold" style="height: 16px; font-size: 0.6rem;">{{ teamIterations.length }}</v-chip>
+            </v-tab>
             <v-tab value="deliverables" class="text-caption font-weight-bold text-uppercase">Deliverables</v-tab>
             <v-tab value="dependencies" class="text-caption font-weight-bold text-uppercase">Dependencies</v-tab>
-            <v-tab value="data" class="text-caption font-weight-bold text-uppercase">Data & Integrations</v-tab>
+            <v-tab value="data" class="text-caption font-weight-bold text-uppercase">Data &amp; Integrations</v-tab>
             <v-tab value="requirements" class="text-caption font-weight-bold text-uppercase">Requirements</v-tab>
             <v-tab value="roster" class="text-caption font-weight-bold text-uppercase">Team Roster</v-tab>
             <v-tab value="mockup" class="text-caption font-weight-bold text-uppercase">Module Preview</v-tab>
+            <v-tab value="glossary" class="text-caption font-weight-bold text-uppercase">
+              <v-icon start size="x-small">mdi-book-open-variant</v-icon> Glossary
+              <v-chip size="x-small" color="primary" variant="flat" class="ml-2 font-weight-bold" style="height: 16px; font-size: 0.6rem;">{{ glossaryList.length }}</v-chip>
+            </v-tab>
           </v-tabs>
 
           <v-card-text class="pa-0">
             <v-window v-model="tab">
+
+              <!-- Board Tab (Task Tracker) -->
+              <v-window-item value="board" class="pa-0">
+                <div class="d-flex flex-column" style="min-height: 520px;">
+
+                  <!-- Active Sprint Banner -->
+                  <div v-if="activeIteration" class="pa-3 pb-0">
+                    <v-card class="pa-3 sprint-banner" elevation="0" rounded="lg">
+                      <div class="d-flex align-center flex-wrap gap-2">
+                        <v-chip size="small" color="warning" variant="flat" class="font-weight-bold">
+                          <v-icon start size="x-small">mdi-lightning-bolt</v-icon>
+                          W{{ activeIteration.weekNumber }}
+                        </v-chip>
+                        <span class="text-body-2 font-weight-bold text-white">{{ activeIteration.name }}</span>
+                        <span class="text-caption text-grey-lighten-1">{{ activeIteration.goal }}</span>
+                        <v-spacer></v-spacer>
+                        <div class="d-flex align-center gap-2 text-caption text-grey-lighten-1">
+                          <v-icon size="x-small">mdi-calendar-range</v-icon>
+                          {{ activeIteration.startDate }} &rarr; {{ activeIteration.endDate }}
+                        </div>
+                        <div class="d-flex align-center gap-1">
+                          <span class="text-caption text-success font-weight-bold">{{ sprintDoneTasks }} done</span>
+                          <span class="text-caption text-grey-lighten-1">/ {{ sprintTotalTasks }} tasks</span>
+                        </div>
+                        <v-progress-linear :model-value="sprintProgress" color="success" bg-color="rgba(255,255,255,0.1)" rounded height="6" style="width: 100px;"></v-progress-linear>
+                      </div>
+                    </v-card>
+                  </div>
+
+                  <!-- Sprint Filter + Add Task toolbar -->
+                  <div class="px-3 pt-3 d-flex align-center flex-wrap gap-2">
+                    <v-icon size="small" color="grey-lighten-1">mdi-filter-variant</v-icon>
+                    <v-chip size="small" :variant="sprintFilter === null ? 'flat' : 'outlined'" :color="sprintFilter === null ? 'primary' : 'grey-lighten-1'" @click="sprintFilter = null" class="font-weight-bold">All</v-chip>
+                    <v-chip size="small" :variant="sprintFilter === 'unassigned' ? 'flat' : 'outlined'" :color="sprintFilter === 'unassigned' ? 'grey' : 'grey-lighten-1'" @click="sprintFilter = 'unassigned'" class="font-weight-bold">Backlog</v-chip>
+                    <v-chip v-for="iter in teamIterations" :key="iter.id" size="small" :variant="sprintFilter === iter.id ? 'flat' : 'outlined'" :color="sprintFilter === iter.id ? 'warning' : 'grey-lighten-1'" @click="sprintFilter = sprintFilter === iter.id ? null : iter.id" class="font-weight-bold">
+                      <v-icon start size="x-small">mdi-lightning-bolt</v-icon> W{{ iter.weekNumber }}
+                    </v-chip>
+                    <v-spacer></v-spacer>
+                    <v-btn v-if="isAuthorized" color="primary" prepend-icon="mdi-plus" rounded="pill" elevation="2" class="font-weight-bold" size="small" @click="dialog = true">Add Task</v-btn>
+                  </div>
+
+                  <!-- Kanban Columns -->
+                  <div class="d-flex flex-nowrap overflow-x-auto pa-3 align-stretch" style="min-height: 420px; gap: 12px;">
+                    <div v-for="column in columns" :key="column.id" style="min-width: 250px; flex: 1;">
+                      <v-card class="glass-column h-100 d-flex flex-column" elevation="0" rounded="lg">
+                        <v-card-title class="py-2 px-3 d-flex justify-space-between align-center border-b" :class="`border-${column.color}`" style="border-bottom-width: 2px !important; border-bottom-color: rgba(255,255,255,0.1) !important; min-height: 40px;">
+                          <div class="d-flex align-center">
+                            <div class="status-dot mr-2" :class="`bg-${column.color}`" style="width: 6px; height: 6px;"></div>
+                            <span class="text-body-2 font-weight-bold text-white letter-spacing-1">{{ column.title }}</span>
+                          </div>
+                          <v-chip size="x-small" variant="tonal" :color="column.color" class="font-weight-bold px-2">{{ getTasksByColumn(column.id).length }}</v-chip>
+                        </v-card-title>
+                        <v-card-text class="flex-grow-1 overflow-y-auto pa-2 list-container">
+                          <draggable :list="getTasksByColumn(column.id)" item-key="id" group="tasks" :disabled="!isAuthorized" @change="onChange($event, column.id)" class="h-100 min-h-150px">
+                            <template #item="{ element }">
+                              <v-card class="mb-2 cursor-move task-card" elevation="0" @click="openTaskDetails(element)" rounded="md">
+                                <div class="task-priority-bar" :style="`background-color: ${getPriorityColor(element.priority)}`"></div>
+                                <v-card-item class="pa-3">
+                                  <v-card-title class="text-body-2 font-weight-bold text-wrap lh-1-2 mb-1 d-flex justify-space-between align-start" style="line-height: 1.2;">
+                                    <span class="mr-2">{{ element.title }}</span>
+                                    <v-btn v-if="isAuthorized" icon="mdi-delete" variant="text" size="x-small" color="error" class="mt-n1 mr-n2 opacity-60 hover-opacity-100" @click.stop="trackerStore.deleteTask(element.id)" style="width: 20px; height: 20px;"></v-btn>
+                                  </v-card-title>
+                                  <v-card-subtitle class="text-caption d-flex align-center mt-2 flex-wrap" style="font-size: 0.7rem !important;">
+                                    <div class="d-flex align-center mr-2 mb-1 bg-surface-variant px-1 py-0 rounded" style="font-size: 0.65rem;">
+                                      <v-icon size="x-small" class="mr-1" style="font-size: 10px;">mdi-account</v-icon>
+                                      <span class="font-weight-medium text-white">{{ element.assignee || 'Unassigned' }}</span>
+                                    </div>
+                                    <v-chip size="x-small" :color="getPriorityColor(element.priority)" variant="flat" class="mr-1 mb-1 font-weight-bold" style="font-size: 0.6rem; height: 16px;">{{ element.priority }}</v-chip>
+                                    <v-chip v-if="element.storyPoints" size="x-small" color="secondary" variant="flat" class="mr-1 mb-1 font-weight-bold" style="font-size: 0.6rem; height: 16px;">
+                                      <v-icon start size="x-small" style="font-size: 8px;">mdi-star</v-icon>{{ element.storyPoints }}
+                                    </v-chip>
+                                    <v-chip v-if="element.iterationId" size="x-small" color="warning" variant="tonal" class="mr-1 mb-1 font-weight-bold" style="font-size: 0.6rem; height: 16px;">
+                                      <v-icon start size="x-small" style="font-size: 8px;">mdi-lightning-bolt</v-icon>
+                                      W{{ getIterationWeek(element.iterationId) }}
+                                    </v-chip>
+                                    <v-spacer></v-spacer>
+                                    <div v-if="element.comments && element.comments.length > 0" class="d-flex align-center text-secondary mb-1 font-weight-bold" style="font-size: 0.65rem;">
+                                      <v-icon size="x-small" class="mr-1" style="font-size: 10px;">mdi-comment-text-multiple</v-icon>
+                                      {{ element.comments.length }}
+                                    </div>
+                                  </v-card-subtitle>
+                                </v-card-item>
+                              </v-card>
+                            </template>
+                          </draggable>
+                        </v-card-text>
+                      </v-card>
+                    </div>
+                  </div>
+
+                </div>
+              </v-window-item>
+
               <!-- Deliverables Tab -->
               <v-window-item value="deliverables" class="pa-4">
+
                 <v-row>
                   <v-col cols="12" sm="3" md="2">
                     <v-tabs v-model="weekTab" direction="vertical" color="primary">
@@ -320,6 +425,132 @@
                 </div>
               </v-window-item>
 
+              <!-- Glossary Tab -->
+              <v-window-item value="glossary" class="pa-0">
+                <!-- Search + Filter Bar -->
+                <div class="bg-surface-variant pa-3 d-flex align-center flex-wrap gap-2 border-b-sm" style="border-color: rgba(255,255,255,0.05) !important;">
+                  <v-text-field
+                    v-model="glossarySearch"
+                    placeholder="Search terms or definitions..."
+                    variant="solo" flat
+                    density="compact"
+                    bg-color="rgba(0,0,0,0.2)"
+                    rounded="lg"
+                    hide-details
+                    clearable
+                    class="modern-select flex-grow-1"
+                    style="min-width: 200px; max-width: 320px;"
+                  >
+                    <template v-slot:prepend-inner>
+                      <v-icon size="small" color="grey-lighten-1" class="mr-1">mdi-magnify</v-icon>
+                    </template>
+                  </v-text-field>
+                  <div class="d-flex flex-wrap gap-1">
+                    <v-chip
+                      v-for="cat in glossaryCategories"
+                      :key="cat"
+                      size="small"
+                      :variant="glossaryCatFilter === cat ? 'flat' : 'outlined'"
+                      :color="glossaryCatFilter === cat ? glossaryCategoryColor(cat) : 'grey-lighten-1'"
+                      @click="glossaryCatFilter = glossaryCatFilter === cat ? null : cat"
+                      class="font-weight-bold"
+                    >{{ cat }}</v-chip>
+                  </div>
+                  <v-spacer></v-spacer>
+                  <span class="text-caption text-grey-lighten-1 mr-2">{{ filteredGlossary.length }} terms</span>
+                </div>
+
+                <!-- Glossary Cards Grid -->
+                <div class="pa-4 overflow-y-auto list-container" style="max-height: 440px;">
+                  <v-row dense>
+                    <v-col
+                      v-for="entry in filteredGlossary"
+                      :key="entry.term"
+                      cols="12" sm="6" md="4"
+                    >
+                      <v-card
+                        class="glossary-card h-100"
+                        elevation="0"
+                        rounded="lg"
+                        :style="`border-left: 3px solid ${glossaryCategoryColorHex(entry.category)};`"
+                      >
+                        <v-card-text class="pa-3">
+                          <div class="d-flex align-start justify-space-between mb-1">
+                            <span class="text-body-2 font-weight-black text-white" style="letter-spacing: 0.3px; line-height: 1.2;">{{ entry.term }}</span>
+                            <v-chip
+                              size="x-small"
+                              :color="glossaryCategoryColor(entry.category)"
+                              variant="tonal"
+                              class="ml-2 flex-shrink-0 font-weight-bold"
+                              style="height: 18px; font-size: 0.58rem;"
+                            >{{ entry.category }}</v-chip>
+                          </div>
+                          <p class="text-caption text-grey-lighten-1 mb-0" style="line-height: 1.5;">{{ entry.definition }}</p>
+                        </v-card-text>
+                      </v-card>
+                    </v-col>
+                  </v-row>
+                  <div v-if="filteredGlossary.length === 0" class="text-center pa-8 text-grey-lighten-1">
+                    <v-icon size="48" color="grey-darken-1" class="mb-3">mdi-book-search-outline</v-icon>
+                    <div class="text-body-2">No matching terms found.</div>
+                  </div>
+                </div>
+              </v-window-item>
+
+              <!-- Iterations Tab -->
+              <v-window-item value="iterations" class="pa-0">
+                <!-- Header toolbar -->
+                <div class="bg-surface-variant pa-3 d-flex align-center flex-wrap gap-2 border-b-sm" style="border-color: rgba(255,255,255,0.05) !important;">
+                  <v-icon size="small" color="warning">mdi-lightning-bolt</v-icon>
+                  <span class="text-caption font-weight-bold text-uppercase text-grey-lighten-1">Sprint Management</span>
+                  <v-spacer></v-spacer>
+                  <v-btn v-if="isAuthorized" size="small" color="warning" variant="tonal" rounded="pill" prepend-icon="mdi-plus" @click="iterDialog = true" class="font-weight-bold">New Sprint</v-btn>
+                </div>
+
+                <!-- Sprint cards -->
+                <div class="pa-4 overflow-y-auto list-container" style="max-height: 440px;">
+                  <v-row dense v-if="teamIterations.length > 0">
+                    <v-col v-for="iter in teamIterations" :key="iter.id" cols="12" md="6">
+                      <v-card class="iteration-card h-100" elevation="0" rounded="lg"
+                        :style="`border-left: 3px solid ${iterStatusColor(iter.status)};`"
+                      >
+                        <v-card-text class="pa-4">
+                          <div class="d-flex align-center justify-space-between mb-2">
+                            <div class="d-flex align-center gap-2">
+                              <v-chip size="x-small" color="warning" variant="flat" class="font-weight-black">W{{ iter.weekNumber }}</v-chip>
+                              <span class="text-body-2 font-weight-bold text-white">{{ iter.name }}</span>
+                            </div>
+                            <div class="d-flex align-center gap-1">
+                              <v-chip size="x-small" :color="iterStatusChipColor(iter.status)" variant="tonal" class="font-weight-bold">{{ iterStatusLabel(iter.status) }}</v-chip>
+                              <template v-if="isAuthorized">
+                                <v-btn icon="mdi-pencil" size="x-small" variant="text" color="grey-lighten-1" @click="openEditIter(iter)"></v-btn>
+                                <v-btn icon="mdi-delete" size="x-small" variant="text" color="error" @click="trackerStore.deleteIteration(iter.id)"></v-btn>
+                              </template>
+                            </div>
+                          </div>
+                          <p class="text-caption text-grey-lighten-1 mb-3" style="line-height: 1.5;">{{ iter.goal }}</p>
+                          <div class="d-flex align-center justify-space-between text-caption text-grey-lighten-1 mb-3">
+                            <span><v-icon size="x-small" class="mr-1">mdi-calendar-start</v-icon>{{ iter.startDate }}</span>
+                            <span><v-icon size="x-small" class="mr-1">mdi-calendar-end</v-icon>{{ iter.endDate }}</span>
+                          </div>
+                          <!-- Task progress -->
+                          <div class="d-flex align-center justify-space-between text-caption mb-1">
+                            <span class="text-grey-lighten-1">{{ iterTasksDone(iter.id) }} / {{ iterTasksTotal(iter.id) }} tasks done</span>
+                            <span class="text-success font-weight-bold">{{ iterProgress(iter.id) }}%</span>
+                          </div>
+                          <v-progress-linear :model-value="iterProgress(iter.id)" color="success" bg-color="rgba(255,255,255,0.1)" rounded height="4"></v-progress-linear>
+                        </v-card-text>
+                      </v-card>
+                    </v-col>
+                  </v-row>
+                  <div v-else class="text-center pa-8 text-grey-lighten-1">
+                    <v-icon size="48" color="grey-darken-1" class="mb-3">mdi-lightning-bolt-outline</v-icon>
+                    <div class="text-body-2 mb-2">No sprints yet.</div>
+                    <v-btn v-if="isAuthorized" size="small" color="warning" variant="tonal" rounded="pill" prepend-icon="mdi-plus" @click="iterDialog = true">Create First Sprint</v-btn>
+                  </div>
+                </div>
+              </v-window-item>
+
             </v-window>
           </v-card-text>
         </v-card>
@@ -327,64 +558,7 @@
     </v-row>
 
     <!-- Board Columns -->
-    <v-row class="flex-grow-0 mb-1" v-if="isAuthorized">
-      <v-col cols="12" class="text-right pb-1">
-        <v-btn color="primary" prepend-icon="mdi-plus" rounded="pill" elevation="2" class="font-weight-bold" size="small" @click="dialog = true">
-          Add Task
-        </v-btn>
-      </v-col>
-    </v-row>
-    <v-row class="flex-grow-1 flex-nowrap overflow-x-auto pb-4 align-stretch">
-      <v-col v-for="column in columns" :key="column.id" cols="12" sm="6" md="3" class="flex-shrink-0" style="min-width: 250px;">
-        <v-card class="glass-column h-100 d-flex flex-column" elevation="0" rounded="lg">
-          <v-card-title class="py-2 px-3 d-flex justify-space-between align-center border-b" :class="`border-${column.color}`" style="border-bottom-width: 2px !important; border-bottom-color: rgba(255,255,255,0.1) !important; min-height: 40px;">
-            <div class="d-flex align-center">
-              <div class="status-dot mr-2" :class="`bg-${column.color}`" style="width: 6px; height: 6px;"></div>
-              <span class="text-body-2 font-weight-bold text-white letter-spacing-1">{{ column.title }}</span>
-            </div>
-            <v-chip size="x-small" variant="tonal" :color="column.color" class="font-weight-bold px-2">{{ getTasksByColumn(column.id).length }}</v-chip>
-          </v-card-title>
-          
-          <v-card-text class="flex-grow-1 overflow-y-auto pa-2 list-container">
-            <draggable
-              :list="getTasksByColumn(column.id)"
-              item-key="id"
-              group="tasks"
-              :disabled="!isAuthorized"
-              @change="onChange($event, column.id)"
-              class="h-100 min-h-150px"
-            >
-              <template #item="{ element }">
-                <v-card class="mb-2 cursor-move task-card" elevation="0" @click="openTaskDetails(element)" rounded="md">
-                  <div class="task-priority-bar" :style="`background-color: ${getPriorityColor(element.priority)}`"></div>
-                  <v-card-item class="pa-3">
-                    <v-card-title class="text-body-2 font-weight-bold text-wrap lh-1-2 mb-1 d-flex justify-space-between align-start" style="line-height: 1.2;">
-                      <span class="mr-2">{{ element.title }}</span>
-                      <v-btn v-if="isAuthorized" icon="mdi-delete" variant="text" size="x-small" color="error" class="mt-n1 mr-n2 opacity-60 hover-opacity-100" @click.stop="trackerStore.deleteTask(element.id)" style="width: 20px; height: 20px;"></v-btn>
-                    </v-card-title>
-                    <v-card-subtitle class="text-caption d-flex align-center mt-2 flex-wrap" style="font-size: 0.7rem !important;">
-                      <div class="d-flex align-center mr-2 mb-1 bg-surface-variant px-1 py-0 rounded" style="font-size: 0.65rem;">
-                        <v-icon size="x-small" class="mr-1" style="font-size: 10px;">mdi-account</v-icon>
-                        <span class="font-weight-medium text-white">{{ element.assignee || 'Unassigned' }}</span>
-                      </div>
-                      <v-chip size="x-small" :color="getPriorityColor(element.priority)" variant="flat" class="mr-1 mb-1 font-weight-bold" style="font-size: 0.6rem; height: 16px;">{{ element.priority }}</v-chip>
-                      <v-chip v-if="element.storyPoints" size="x-small" color="secondary" variant="flat" class="mr-1 mb-1 font-weight-bold" style="font-size: 0.6rem; height: 16px;">
-                        <v-icon start size="x-small" style="font-size: 8px;">mdi-star</v-icon>{{ element.storyPoints }}
-                      </v-chip>
-                      <v-spacer></v-spacer>
-                      <div v-if="element.comments && element.comments.length > 0" class="d-flex align-center text-secondary mb-1 font-weight-bold" style="font-size: 0.65rem;">
-                        <v-icon size="x-small" class="mr-1" style="font-size: 10px;">mdi-comment-text-multiple</v-icon>
-                        {{ element.comments.length }}
-                      </div>
-                    </v-card-subtitle>
-                  </v-card-item>
-                </v-card>
-              </template>
-            </draggable>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+    <!-- Dialogs are kept outside tabs -->
 
     <!-- Add Task Dialog -->
     <v-dialog v-model="dialog" max-width="600px">
@@ -458,6 +632,22 @@
                   color="secondary"
                   min="0"
                 ></v-text-field>
+              </v-col>
+              <v-col cols="12">
+                <v-select
+                  v-model="newTask.iterationId"
+                  :items="iterationSelectItems"
+                  item-title="label"
+                  item-value="id"
+                  label="Sprint (optional)"
+                  variant="solo" flat
+                  bg-color="rgba(0,0,0,0.2)"
+                  rounded="lg"
+                  color="warning"
+                  clearable
+                  class="modern-select"
+                  prepend-inner-icon="mdi-lightning-bolt"
+                ></v-select>
               </v-col>
             </v-row>
           </v-form>
@@ -685,10 +875,73 @@
                 </template>
               </v-text-field>
             </div>
+
+            <div class="mb-5">
+              <div class="text-caption text-grey mb-2 font-weight-bold">SPRINT</div>
+              <v-select
+                v-model="editedTask.iterationId"
+                :items="iterationSelectItems"
+                item-title="label"
+                item-value="id"
+                variant="solo" flat
+                rounded="lg"
+                density="compact"
+                bg-color="rgba(0,0,0,0.2)"
+                hide-details
+                clearable
+                class="modern-select"
+                :disabled="!isAuthorized"
+                @update:modelValue="saveTaskDetails"
+              >
+                <template v-slot:prepend-inner>
+                  <v-icon size="small" color="warning" class="mr-1">mdi-lightning-bolt</v-icon>
+                </template>
+                <template v-slot:selection="{ item }">
+                  <v-chip size="small" color="warning" variant="tonal" class="font-weight-bold">{{ item.title }}</v-chip>
+                </template>
+              </v-select>
+            </div>
           </div>
         </v-card-text>
       </v-card>
     </v-dialog>
+
+  <!-- Sprint dialog (add / edit) -->
+  <v-dialog v-model="iterDialog" max-width="560px">
+    <v-card rounded="xl" class="glass-dialog">
+      <v-card-title class="text-h6 pa-5 font-weight-bold d-flex align-center border-b" style="border-color:rgba(255,255,255,0.1) !important;">
+        <v-icon color="warning" class="mr-2">mdi-lightning-bolt</v-icon>
+        {{ editingIter ? 'Edit Sprint' : 'New Sprint' }}
+      </v-card-title>
+      <v-card-text class="pa-5">
+        <v-row dense>
+          <v-col cols="12" sm="8">
+            <v-text-field v-model="iterForm.name" label="Sprint Name" variant="solo" flat bg-color="rgba(0,0,0,0.2)" rounded="lg" color="warning" hide-details class="mb-3"></v-text-field>
+          </v-col>
+          <v-col cols="12" sm="4">
+            <v-select v-model="iterForm.weekNumber" :items="[1,2,3,4,5,6,7,8]" label="Week" variant="solo" flat bg-color="rgba(0,0,0,0.2)" rounded="lg" color="warning" hide-details class="mb-3"></v-select>
+          </v-col>
+          <v-col cols="12">
+            <v-textarea v-model="iterForm.goal" label="Sprint Goal" variant="solo" flat bg-color="rgba(0,0,0,0.2)" rounded="lg" color="warning" rows="2" auto-grow hide-details class="mb-3 modern-textarea"></v-textarea>
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-text-field v-model="iterForm.startDate" label="Start Date" type="date" variant="solo" flat bg-color="rgba(0,0,0,0.2)" rounded="lg" color="warning" hide-details class="mb-3"></v-text-field>
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-text-field v-model="iterForm.endDate" label="End Date" type="date" variant="solo" flat bg-color="rgba(0,0,0,0.2)" rounded="lg" color="warning" hide-details class="mb-3"></v-text-field>
+          </v-col>
+          <v-col cols="12">
+            <v-select v-model="iterForm.status" :items="[{title:'Upcoming',value:'upcoming'},{title:'Active',value:'active'},{title:'Completed',value:'completed'}]" item-title="title" item-value="value" label="Status" variant="solo" flat bg-color="rgba(0,0,0,0.2)" rounded="lg" color="warning" hide-details></v-select>
+          </v-col>
+        </v-row>
+      </v-card-text>
+      <v-card-actions class="pa-5 pt-0">
+        <v-spacer></v-spacer>
+        <v-btn color="grey-lighten-1" variant="text" rounded="pill" @click="closeIterDialog">Cancel</v-btn>
+        <v-btn color="warning" variant="elevated" rounded="pill" @click="submitIter" class="font-weight-bold px-5">{{ editingIter ? 'Save' : 'Create' }}</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 
   </v-container>
 </template>
@@ -699,7 +952,7 @@ import { useRoute } from 'vue-router'
 import draggable from 'vuedraggable'
 import { useTrackerStore } from '../store/trackerStore'
 import { useAuthStore } from '../store/authStore'
-import { teamsInfo, teamMeta, teamDeliverables, teamRequirements } from '../data/teams'
+import { teamsInfo, teamMeta, teamDeliverables, teamRequirements, teamGlossary } from '../data/teams'
 
 const route = useRoute()
 const trackerStore = useTrackerStore()
@@ -716,9 +969,17 @@ const newComment = ref('')
 const editingCommentId = ref(null)
 const editingCommentText = ref('')
 
-const tab = ref('deliverables')
+// Iteration dialog
+const iterDialog = ref(false)
+const editingIter = ref(null)
+const iterForm = ref({ name: '', weekNumber: 1, goal: '', startDate: '', endDate: '', status: 'upcoming' })
+
+const tab = ref('board')
 const weekTab = ref(1)
 const reqFilter = ref('All')
+const glossarySearch = ref('')
+const glossaryCatFilter = ref(null)
+const sprintFilter = ref(null)
 
 const teamId = computed(() => Number(route.params.id))
 const isAuthorized = computed(() => {
@@ -741,6 +1002,62 @@ const filteredRequirements = computed(() => {
   if (reqFilter.value === 'AI') return requirementsList.value.filter(r => r.ai)
   return requirementsList.value
 })
+
+const glossaryList = computed(() => teamGlossary[teamId.value] || [])
+
+const glossaryCategories = computed(() => {
+  const cats = new Set(glossaryList.value.map(e => e.category))
+  return Array.from(cats).sort()
+})
+
+const filteredGlossary = computed(() => {
+  let list = glossaryList.value
+  if (glossaryCatFilter.value) {
+    list = list.filter(e => e.category === glossaryCatFilter.value)
+  }
+  const q = (glossarySearch.value || '').toLowerCase().trim()
+  if (q) {
+    list = list.filter(e =>
+      e.term.toLowerCase().includes(q) ||
+      e.definition.toLowerCase().includes(q)
+    )
+  }
+  return list
+})
+
+const glossaryCategoryColor = (cat) => {
+  const map = {
+    'AI': 'secondary',
+    'Platform': 'primary',
+    'Role': 'info',
+    'Compliance': 'warning',
+    'DevOps': 'teal',
+    'Integration': 'orange',
+    'Quality': 'success',
+    'Observability': 'purple',
+    'Data Entity': 'cyan',
+    'Domain': 'amber',
+    'Requirements': 'deep-orange',
+  }
+  return map[cat] || 'grey'
+}
+
+const glossaryCategoryColorHex = (cat) => {
+  const map = {
+    'AI': '#9C27B0',
+    'Platform': '#6366F1',
+    'Role': '#2196F3',
+    'Compliance': '#FF9800',
+    'DevOps': '#009688',
+    'Integration': '#FF5722',
+    'Quality': '#4CAF50',
+    'Observability': '#7E57C2',
+    'Data Entity': '#00BCD4',
+    'Domain': '#FFC107',
+    'Requirements': '#FF7043',
+  }
+  return map[cat] || '#9E9E9E'
+}
 
 const teamMentors = computed(() => {
   return authStore.allUsers.filter(u => 
@@ -775,12 +1092,77 @@ const columns = [
   { id: 'done', title: 'Done', color: 'green' }
 ]
 
+// ─── Iteration computeds ────────────────────────────────────────────────────
+const teamIterations = computed(() =>
+  trackerStore.iterations
+    .filter(i => i.teamId === teamId.value)
+    .sort((a, b) => a.weekNumber - b.weekNumber)
+)
+
+const activeIteration = computed(() => teamIterations.value.find(i => i.status === 'active') || null)
+
+const iterationSelectItems = computed(() =>
+  teamIterations.value.map(i => ({ id: i.id, label: `W${i.weekNumber} — ${i.name}` }))
+)
+
+const iterTasksTotal = (iterId) =>
+  trackerStore.tasks.filter(t => t.teamId === teamId.value && t.iterationId === iterId).length
+
+const iterTasksDone = (iterId) =>
+  trackerStore.tasks.filter(t => t.teamId === teamId.value && t.iterationId === iterId && t.status === 'done').length
+
+const iterProgress = (iterId) => {
+  const total = iterTasksTotal(iterId)
+  return total === 0 ? 0 : Math.round((iterTasksDone(iterId) / total) * 100)
+}
+
+const sprintTotalTasks = computed(() => activeIteration.value ? iterTasksTotal(activeIteration.value.id) : 0)
+const sprintDoneTasks = computed(() => activeIteration.value ? iterTasksDone(activeIteration.value.id) : 0)
+const sprintProgress = computed(() => activeIteration.value ? iterProgress(activeIteration.value.id) : 0)
+
+const getIterationWeek = (iterId) => {
+  const iter = trackerStore.iterations.find(i => i.id === iterId)
+  return iter?.weekNumber ?? '?'
+}
+
+const iterStatusColor = (status) => {
+  return { upcoming: '#9E9E9E', active: '#FF9800', completed: '#4CAF50' }[status] || '#9E9E9E'
+}
+const iterStatusChipColor = (status) => {
+  return { upcoming: 'grey', active: 'warning', completed: 'success' }[status] || 'grey'
+}
+const iterStatusLabel = (status) => {
+  return { upcoming: 'Upcoming', active: 'Active', completed: 'Completed' }[status] || status
+}
+
+// Sprint dialog helpers
+const openEditIter = (iter) => {
+  editingIter.value = iter
+  iterForm.value = { name: iter.name, weekNumber: iter.weekNumber, goal: iter.goal, startDate: iter.startDate, endDate: iter.endDate, status: iter.status }
+  iterDialog.value = true
+}
+const closeIterDialog = () => {
+  iterDialog.value = false
+  editingIter.value = null
+  iterForm.value = { name: '', weekNumber: teamIterations.value.length + 1, goal: '', startDate: '', endDate: '', status: 'upcoming' }
+}
+const submitIter = async () => {
+  const payload = { ...iterForm.value, teamId: teamId.value, weekNumber: Number(iterForm.value.weekNumber) }
+  if (editingIter.value) {
+    await trackerStore.updateIteration(editingIter.value.id, payload)
+  } else {
+    await trackerStore.addIteration(payload)
+  }
+  closeIterDialog()
+}
+
 const newTask = ref({
   title: '',
   description: '',
   assignee: null,
   priority: 'Medium',
-  storyPoints: null
+  storyPoints: null,
+  iterationId: null
 })
 
 // Filter team members for the dropdown
@@ -800,11 +1182,15 @@ const rosterMentors = computed(() => {
 onMounted(() => {
   trackerStore.subscribeTasks()
   trackerStore.subscribeEngineers()
-  authStore.fetchAllUsers() // Ensure we have users for the mentor list
+  trackerStore.subscribeIterations()
+  authStore.fetchAllUsers()
 })
 
 const getTasksByColumn = (status) => {
-  return trackerStore.tasks.filter(t => t.teamId === teamId.value && t.status === status)
+  let list = trackerStore.tasks.filter(t => t.teamId === teamId.value && t.status === status)
+  if (sprintFilter.value === null) return list
+  if (sprintFilter.value === 'unassigned') return list.filter(t => !t.iterationId)
+  return list.filter(t => t.iterationId === sprintFilter.value)
 }
 
 const onChange = (evt, newStatus) => {
@@ -817,14 +1203,13 @@ const submitTask = () => {
   if (valid.value) {
     trackerStore.addTask({
       ...newTask.value,
+      iterationId: newTask.value.iterationId || null,
       teamId: teamId.value,
       status: 'todo',
       comments: [],
       createdAt: new Date().toISOString()
     })
-    
-    // Reset form
-    newTask.value = { title: '', description: '', assignee: null, priority: 'Medium', storyPoints: null }
+    newTask.value = { title: '', description: '', assignee: null, priority: 'Medium', storyPoints: null, iterationId: null }
     dialog.value = false
   }
 }
@@ -837,7 +1222,8 @@ const openTaskDetails = (task) => {
     assignee: task.assignee,
     priority: task.priority,
     status: task.status,
-    storyPoints: task.storyPoints
+    storyPoints: task.storyPoints,
+    iterationId: task.iterationId || null
   }
   newComment.value = ''
   editingCommentId.value = null
@@ -857,7 +1243,8 @@ const saveTaskDetails = () => {
       assignee: editedTask.value.assignee,
       priority: editedTask.value.priority,
       status: editedTask.value.status,
-      storyPoints: editedTask.value.storyPoints
+      storyPoints: editedTask.value.storyPoints,
+      iterationId: editedTask.value.iterationId || null
     })
   }
 }
@@ -1171,6 +1558,55 @@ const getPriorityColor = (priority) => {
 .v-theme--light .req-card {
   background: rgba(0, 0, 0, 0.02) !important;
   border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Glossary Cards */
+.glossary-card {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.glossary-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 20px -6px rgba(0,0,0,0.4) !important;
+}
+.v-theme--light .glossary-card {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+.v-theme--light .glossary-card:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 8px 20px -6px rgba(0,0,0,0.12) !important;
+}
+
+/* Sprint / Iteration Cards */
+.sprint-banner {
+  background: rgba(255, 152, 0, 0.08) !important;
+  border: 1px solid rgba(255, 152, 0, 0.25);
+  backdrop-filter: blur(10px);
+}
+.v-theme--light .sprint-banner {
+  background: rgba(255, 152, 0, 0.06) !important;
+  border-color: rgba(255, 152, 0, 0.3) !important;
+}
+.iteration-card {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.iteration-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 20px -6px rgba(0,0,0,0.4) !important;
+}
+.v-theme--light .iteration-card {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+.v-theme--light .iteration-card:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 8px 20px -6px rgba(0,0,0,0.12) !important;
 }
 
 /* Enhanced Typography for Light Mode Module Specification */
