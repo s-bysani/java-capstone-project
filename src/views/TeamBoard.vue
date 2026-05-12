@@ -66,9 +66,9 @@
         <v-card class="glass-card" rounded="lg" elevation="0">
           <v-tabs v-model="tab" color="primary" align-tabs="start" class="border-b-sm" style="border-color: rgba(255,255,255,0.05) !important;">
             <v-tab value="board" class="text-caption font-weight-bold text-uppercase">
-              <v-icon start size="x-small">mdi-view-kanban</v-icon> Task Board
+              <v-icon start size="x-small">mdi-view-dashboard-outline</v-icon> Task Board
             </v-tab>
-            <v-tab value="iterations" class="text-caption font-weight-bold text-uppercase">
+            <v-tab v-if="adminStore.features.sprintManagement" value="iterations" class="text-caption font-weight-bold text-uppercase">
               <v-icon start size="x-small">mdi-lightning-bolt</v-icon> Sprints
               <v-chip size="x-small" color="warning" variant="flat" class="ml-2 font-weight-bold" style="height: 16px; font-size: 0.6rem;">{{ teamIterations.length }}</v-chip>
             </v-tab>
@@ -117,12 +117,14 @@
 
                   <!-- Sprint Filter + Add Task toolbar -->
                   <div class="px-3 pt-3 d-flex align-center flex-wrap gap-2">
-                    <v-icon size="small" color="grey-lighten-1">mdi-filter-variant</v-icon>
-                    <v-chip size="small" :variant="sprintFilter === null ? 'flat' : 'outlined'" :color="sprintFilter === null ? 'primary' : 'grey-lighten-1'" @click="sprintFilter = null" class="font-weight-bold">All</v-chip>
-                    <v-chip size="small" :variant="sprintFilter === 'unassigned' ? 'flat' : 'outlined'" :color="sprintFilter === 'unassigned' ? 'grey' : 'grey-lighten-1'" @click="sprintFilter = 'unassigned'" class="font-weight-bold">Backlog</v-chip>
-                    <v-chip v-for="iter in teamIterations" :key="iter.id" size="small" :variant="sprintFilter === iter.id ? 'flat' : 'outlined'" :color="sprintFilter === iter.id ? 'warning' : 'grey-lighten-1'" @click="sprintFilter = sprintFilter === iter.id ? null : iter.id" class="font-weight-bold">
-                      <v-icon start size="x-small">mdi-lightning-bolt</v-icon> W{{ iter.weekNumber }}
-                    </v-chip>
+                    <template v-if="adminStore.features.sprintManagement">
+                      <v-icon size="small" color="grey-lighten-1">mdi-filter-variant</v-icon>
+                      <v-chip size="small" :variant="sprintFilter === null ? 'flat' : 'outlined'" :color="sprintFilter === null ? 'primary' : 'grey-lighten-1'" @click="sprintFilter = null" class="font-weight-bold">All</v-chip>
+                      <v-chip size="small" :variant="sprintFilter === 'unassigned' ? 'flat' : 'outlined'" :color="sprintFilter === 'unassigned' ? 'grey' : 'grey-lighten-1'" @click="sprintFilter = 'unassigned'" class="font-weight-bold">Backlog</v-chip>
+                      <v-chip v-for="iter in teamIterations" :key="iter.id" size="small" :variant="sprintFilter === iter.id ? 'flat' : 'outlined'" :color="sprintFilter === iter.id ? 'warning' : 'grey-lighten-1'" @click="sprintFilter = sprintFilter === iter.id ? null : iter.id" class="font-weight-bold">
+                        <v-icon start size="x-small">mdi-lightning-bolt</v-icon> W{{ iter.weekNumber }}
+                      </v-chip>
+                    </template>
                     <v-spacer></v-spacer>
                     <v-btn v-if="isAuthorized" color="primary" prepend-icon="mdi-plus" rounded="pill" elevation="2" class="font-weight-bold" size="small" @click="dialog = true">Add Task</v-btn>
                   </div>
@@ -157,7 +159,7 @@
                                     <v-chip v-if="element.storyPoints" size="x-small" color="secondary" variant="flat" class="mr-1 mb-1 font-weight-bold" style="font-size: 0.6rem; height: 16px;">
                                       <v-icon start size="x-small" style="font-size: 8px;">mdi-star</v-icon>{{ element.storyPoints }}
                                     </v-chip>
-                                    <v-chip v-if="element.iterationId" size="x-small" color="warning" variant="tonal" class="mr-1 mb-1 font-weight-bold" style="font-size: 0.6rem; height: 16px;">
+                                    <v-chip v-if="adminStore.features.sprintManagement && element.iterationId" size="x-small" color="warning" variant="tonal" class="mr-1 mb-1 font-weight-bold" style="font-size: 0.6rem; height: 16px;">
                                       <v-icon start size="x-small" style="font-size: 8px;">mdi-lightning-bolt</v-icon>
                                       W{{ getIterationWeek(element.iterationId) }}
                                     </v-chip>
@@ -633,7 +635,7 @@
                   min="0"
                 ></v-text-field>
               </v-col>
-              <v-col cols="12">
+              <v-col cols="12" v-if="adminStore.features.sprintManagement">
                 <v-select
                   v-model="newTask.iterationId"
                   :items="iterationSelectItems"
@@ -876,7 +878,7 @@
               </v-text-field>
             </div>
 
-            <div class="mb-5">
+            <div class="mb-5" v-if="adminStore.features.sprintManagement">
               <div class="text-caption text-grey mb-2 font-weight-bold">SPRINT</div>
               <v-select
                 v-model="editedTask.iterationId"
@@ -947,16 +949,18 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import draggable from 'vuedraggable'
 import { useTrackerStore } from '../store/trackerStore'
 import { useAuthStore } from '../store/authStore'
+import { useAdminStore } from '../store/adminStore'
 import { teamsInfo, teamMeta, teamDeliverables, teamRequirements, teamGlossary } from '../data/teams'
 
 const route = useRoute()
 const trackerStore = useTrackerStore()
 const authStore = useAuthStore()
+const adminStore = useAdminStore()
 
 const dialog = ref(false)
 const valid = ref(false)
@@ -1184,6 +1188,14 @@ onMounted(() => {
   trackerStore.subscribeEngineers()
   trackerStore.subscribeIterations()
   authStore.fetchAllUsers()
+  adminStore.subscribeFeatures()
+})
+
+onUnmounted(() => {
+  trackerStore.unsubscribeTasks()
+  trackerStore.unsubscribeEngineers()
+  trackerStore.unsubscribeIterations()
+  adminStore.unsubscribeFeatures()
 })
 
 const getTasksByColumn = (status) => {

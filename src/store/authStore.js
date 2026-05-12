@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
-import { doc, getDoc, setDoc, collection, onSnapshot, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, collection, onSnapshot, updateDoc, deleteDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -99,8 +99,18 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const deleteUserDoc = async (uid) => {
+    try {
+      const userRef = doc(db, 'users', uid)
+      await deleteDoc(userRef)
+    } catch (err) {
+      console.error('Failed to delete user:', err)
+      throw err
+    }
+  }
+
   return { 
     user, userRole, userTeamIds, allUsers, isAuthReady, error, 
-    initAuth, loginWithGoogle, fetchAllUsers, updateUserPermissions 
+    initAuth, loginWithGoogle, fetchAllUsers, updateUserPermissions, deleteUserDoc
   }
 })

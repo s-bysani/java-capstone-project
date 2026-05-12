@@ -12,6 +12,9 @@
       <v-btn v-if="authStore.userRole === 'admin'" to="/composition" variant="text" rounded="pill" class="mx-1 nav-btn" active-class="nav-btn-active">
         <v-icon start size="small">mdi-account-group</v-icon>Team Comp
       </v-btn>
+      <v-btn v-if="authStore.userRole === 'admin'" to="/admin" variant="text" rounded="pill" class="mx-1 nav-btn" active-class="nav-btn-active">
+        <v-icon start size="small">mdi-security</v-icon>Admin Panel
+      </v-btn>
       
       <v-divider vertical class="mx-3 my-3 opacity-50"></v-divider>
 

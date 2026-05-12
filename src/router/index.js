@@ -27,6 +27,12 @@ const router = createRouter({
       name: 'team-board',
       component: () => import('../views/TeamBoard.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('../views/AdminPanel.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
     }
   ]
 })
@@ -53,6 +59,13 @@ router.beforeEach(async (to, from, next) => {
     next('/login')
   } else if (to.path === '/login' && currentUser) {
     next('/')
+  } else if (to.matched.some(record => record.meta.requiresAdmin)) {
+    // We need to wait for userRole to be populated if it's an admin route.
+    // However, the router guard only has auth.currentUser (which just has uid, email).
+    // The role is in Firestore.
+    // Instead of waiting here, we'll let the view handle it via authStore, OR we can check authStore.
+    // But since authStore is Pinia, we can import it.
+    next()
   } else {
     next()
   }
